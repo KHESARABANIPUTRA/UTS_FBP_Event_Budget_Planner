@@ -1,0 +1,36 @@
+<div class="card" [formGroup]="group">
+  <div class="card-head">
+    <strong>{{ index + 1 }}.</strong>
+    <input type="text" formControlName="name" placeholder="Nama kategori" />
+    <input type="number" formControlName="percent" class="small" /> %
+    <button type="button" (click)="move.emit({ index: index, to: index - 1 })" [disabled]="!canMoveUp">↑</button>
+    <button type="button" (click)="move.emit({ index: index, to: index + 1 })" [disabled]="!canMoveDown">↓</button>
+    <button type="button" (click)="duplicate.emit(index)" [disabled]="!canDuplicate">Duplikat</button>
+    <button type="button" class="danger" (click)="remove.emit(index)" [disabled]="!canRemove">Hapus</button>
+  </div>
+
+  <ng-container *ngIf="hasItems; then withItems; else noItems"></ng-container>
+
+  <ng-template #noItems><p class="hint">Belum ada item biaya pada kategori ini.</p></ng-template>
+
+  <ng-template #withItems>
+    <div formArrayName="items">
+      <!-- NESTED LOOP -->
+      <div class="item" *ngFor="let item of items.controls; let j = index; let firstItem = first; let lastItem = last; trackBy: trackByItem" [formGroupName]="j">
+        <span>{{ index + 1 }}.{{ j + 1 }}</span>
+        <input type="text" formControlName="name" placeholder="Nama item" />
+        <input type="number" formControlName="qty" class="small" />
+        ×
+        <input type="number" formControlName="price" />
+        = <b>{{ itemSubtotal(item) | number:'1.0-0' }}</b>
+        <button type="button" (click)="moveItem.emit({ catIndex: index, from: j, to: j - 1 })" [disabled]="firstItem">↑</button>
+        <button type="button" (click)="moveItem.emit({ catIndex: index, from: j, to: j + 1 })" [disabled]="lastItem">↓</button>
+        <button type="button" class="danger" (click)="removeItem.emit({ catIndex: index, itemIndex: j })">✕</button>
+      </div>
+    </div>
+    <p class="errors" *ngIf="hasDuplicateItem">Nama item tidak boleh duplikat dalam satu kategori.</p>
+    <p class="hint">Subtotal kategori: {{ categoryTotal | number:'1.0-0' }}</p>
+  </ng-template>
+
+  <button type="button" (click)="addItem.emit(index)" [disabled]="!canAddItem">+ Item Biaya</button>
+</div>

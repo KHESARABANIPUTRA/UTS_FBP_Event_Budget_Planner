@@ -1,0 +1,76 @@
+<div class="container">
+  <h1>Event Budget Planner</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="row">
+      <label>Nama Acara
+        <input type="text" formControlName="eventName" placeholder="mis. Seminar Nasional" />
+      </label>
+      <label>Total Budget (Rp)
+        <input type="number" formControlName="totalBudget" />
+      </label>
+    </div>
+
+    <div class="toolbar no-print">
+      <button type="button" (click)="addCategory()" [disabled]="!canAddCategory">+ Kategori</button>
+      <button type="button" (click)="loadTemplate()">Muat Template</button>
+      <button type="button" (click)="distributeEqually()" [disabled]="!hasCategories">Bagi Persen Rata</button>
+      <button type="button" class="danger" (click)="resetAll()">Reset</button>
+      <span class="hint" *ngIf="!canAddCategory">Maksimal {{ MAX_CATEGORIES }} kategori.</span>
+    </div>
+
+    <!-- Template Branching: Empty State vs Populated State -->
+    <ng-container *ngIf="hasCategories; then populated; else empty"></ng-container>
+
+    <ng-template #empty>
+      <app-empty-state (createFirst)="addCategory()" (useTemplate)="loadTemplate()"></app-empty-state>
+    </ng-template>
+
+    <ng-template #populated>
+      <app-category-row
+        *ngFor="let cat of categories.controls; let i = index; let first = first; let last = last; trackBy: trackByCategory"
+        [group]="asGroup(cat)"
+        [index]="i"
+        [isFirst]="first"
+        [isLast]="last"
+        [canRemove]="canRemoveCategory"
+        [canAddItem]="canAddItemAt(i)"
+        [canDuplicate]="canDuplicate"
+        (duplicate)="duplicateCategory($event)"
+        (moveItem)="moveItem($event.catIndex, $event.from, $event.to)"
+        (remove)="removeCategory($event)"
+        (move)="moveCategory($event.index, $event.to)"
+        (addItem)="addItem($event)"
+        (removeItem)="removeItem($event.catIndex, $event.itemIndex)">
+      </app-category-row>
+
+      <div class="errors" *ngIf="hasAnyError">
+        <p *ngIf="hasPercentError">Total persen {{ totalPercent | number:'1.0-2' }}% — harus tepat 100%.</p>
+        <p *ngIf="hasDuplicateError">Nama kategori tidak boleh duplikat.</p>
+        <p *ngIf="hasQuotaError">Total item melebihi kuota: {{ quotaErrorNames }}.</p>
+      </div>
+
+      <app-summary-panel
+        [summary]="summary"
+        [totalUsed]="totalUsed"
+        [remainingBudget]="remainingBudget"
+        [isOverBudget]="isOverBudget">
+      </app-summary-panel>
+
+      <app-budget-chart [summary]="summary" [totalUsed]="totalUsed"></app-budget-chart>
+    </ng-template>
+
+    <div class="errors no-print" *ngIf="hasBlockers">
+      <p><b>Belum bisa disimpan:</b></p>
+      <p *ngFor="let msg of submitBlockers">• {{ msg }}</p>
+    </div>
+
+    <div class="toolbar no-print">
+      <button type="submit" class="primary" [disabled]="!canSubmit">Simpan Rencana</button>
+      <button type="button" (click)="exportCsv()" [disabled]="!canExport">Unduh CSV (Excel)</button>
+      <button type="button" (click)="exportJson()" [disabled]="!canExport">Unduh JSON</button>
+      <button type="button" (click)="printReport()" [disabled]="!canExport">Cetak / Simpan PDF</button>
+    </div>
+    <p class="ok no-print" *ngIf="submitted">Rencana anggaran tersimpan (in-memory).</p>
+  </form>
+</div>
